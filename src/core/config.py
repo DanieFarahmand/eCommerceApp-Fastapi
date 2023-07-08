@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE: int
     REFRESH_TOKEN_EXPIRE: int
+    REDIS_URL: str
 
     class Config:
         env_file = Path(__file__).parent / ".env"
