@@ -9,3 +9,13 @@ class CustomException(Exception):
     def __init__(self, message=None):
         if message:
             self.message = message
+
+
+class UserAlreadyExistsException(CustomException):
+    status_code = HTTPStatus.CONFLICT
+    error_code = "user_already_exists"
+    message = HTTPStatus.CONFLICT.description
+
+    def __init__(self, message=None):
+        if message:
+            self.message = message
