@@ -1,19 +1,22 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from src.core.db.database import AsyncSession, get_session, AsyncSessionLocal
- 
+from src.controlllers.auth import AuthController
+from src.core.db.database import AsyncSession, get_session
+
 router = APIRouter(tags=["User"])
-#
-#
-# @router.post('/user/')
-# async def create_user_endpoint(user_data: UserRequest, session: AsyncSession = Depends(get_session)):
-#     async with session() as async_session:
-#         user = await User.create_user(async_session, user_data=user_data)
-#         async_session.add(user)
-#         await async_session.flush()
-#         await async_session.refresh(user)
-#         return user
-#
+
+
+class UserRequest(BaseModel):
+    email: str
+    password: str
+
+
+@router.post('/user/')
+async def create_user_endpoint(user_data: UserRequest, session: AsyncSession = Depends(get_session)):
+    user = await AuthController(db_session=session).register(user=user_data)
+    return user
+
 #
 # @router.get("/users")
 # async def get_all_users(session: AsyncSession = Depends(get_session)):

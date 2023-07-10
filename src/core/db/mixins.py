@@ -24,6 +24,8 @@ class IdMixin:
         BigInteger,
         primary_key=True,
         nullable=False,
+        index=True,
+        autoincrement=True,
     )
 
 
@@ -32,4 +34,5 @@ class UUIDMixin:
         String, primary_key=True,
         default=lambda: str(uuid.uuid4()),
         nullable=False,
+        index=True,
     )

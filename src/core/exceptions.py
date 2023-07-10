@@ -19,3 +19,13 @@ class UserAlreadyExistsException(CustomException):
     def __init__(self, message=None):
         if message:
             self.message = message
+
+
+class ForbiddenException(CustomException):
+    code = HTTPStatus.FORBIDDEN
+    error_code = HTTPStatus.FORBIDDEN
+    message = HTTPStatus.FORBIDDEN.description
+
+    def __init__(self, message=None):
+        if message:
+            self.message = message
