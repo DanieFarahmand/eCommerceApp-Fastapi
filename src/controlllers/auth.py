@@ -11,8 +11,8 @@ class AuthController:
         self.db_session = db_session
 
     async def register(self, user):
-        new_user = await User.create_user_by_email(
-            email=user.email, password=user.password, session=self.db_session
+        new_user = await User.create_user_by_phone(
+            phone=user.phone, password=user.password, session=self.db_session
         )
         return new_user
 

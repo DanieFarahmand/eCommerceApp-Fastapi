@@ -6,7 +6,7 @@ from sqlalchemy import String, Enum
 # from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db.base import SQLBase
-from src.core.db.database import async_engine, AsyncSession
+from src.core.db.database import AsyncSession
 from src.core.db.mixins import UUIDMixin, IdMixin, TimestampMixin
 from src.models.enums import UserRoleEnum
 from src.utils.password import PasswordHandler
@@ -56,16 +56,13 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
         return new_user
 
     @staticmethod
-    async def create_user_by_phone(session: AsyncSession, phone, password):
+    async def create_user_by_phone(session: AsyncSession, phone):
         get_user = sa.select(User).where(phone == User.phone)
         existing_user = await session.scalar(get_user)
         if existing_user is not None:
             raise UserAlreadyExistsException(
                 message="User with this phone number already exists.")
-        new_user = User(
-            email=phone,
-            password=PasswordHandler.hash(password),
-        )
+        new_user = User(phone=phone)
         async with session:
             session.add(new_user)
             await session.commit()

@@ -8,8 +8,7 @@ router = APIRouter(tags=["User"])
 
 
 class UserRequest(BaseModel):
-    email: str
-    password: str
+    phone: str
 
 
 @router.post('/user/')

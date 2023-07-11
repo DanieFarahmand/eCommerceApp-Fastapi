@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE: int
     REFRESH_TOKEN_EXPIRE: int
     REDIS_URL: str
+    SMS_API_KEY: str
+    OTP_CODE_LENGTH: int
 
     class Config:
         env_file = Path(__file__).parent / ".env"

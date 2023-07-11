@@ -1,3 +1,4 @@
+import datetime
 from typing import Union
 import json
 
@@ -38,3 +39,7 @@ class RedisHandler:
         serialized_name = await self.serialize(name)
         serialized_value = await self.serialize(value)
         return await self.redis.set(serialized_name, serialized_value, exp)
+
+    async def delete(self, name):
+        serialized_name = await self.serialize(name)
+        await self.redis.delete(serialized_name)
