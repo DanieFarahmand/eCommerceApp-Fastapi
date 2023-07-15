@@ -1,4 +1,3 @@
-import datetime
 from typing import Union
 import json
 
@@ -10,7 +9,7 @@ from src.core.config import settings
 class RedisHandler:
     def __init__(self):
         self.redis_url = settings.REDIS_URL
-        self.redis: Union[None, Redis] = None
+        self.redis: Union[Redis, None] = None
 
     @staticmethod
     async def serialize(value) -> str:

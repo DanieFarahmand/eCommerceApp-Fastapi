@@ -41,8 +41,8 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def create_user_by_email(session: AsyncSession, email, password):
-        get_user = sa.select(User).where(email == User.email)
-        existing_user = await session.scalar(get_user)
+        user = sa.select(User).where(email == User.email)
+        existing_user = await session.scalar(user)
         if existing_user is not None:
             raise UserAlreadyExistsException(
                 message="User with this email already exists.")
@@ -57,8 +57,8 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def create_user_by_phone(session: AsyncSession, phone):
-        get_user = sa.select(User).where(phone == User.phone)
-        existing_user = await session.scalar(get_user)
+        user = sa.select(User).where(phone == User.phone)
+        existing_user = await session.scalar(user)
         if existing_user is not None:
             raise UserAlreadyExistsException(
                 message="User with this phone number already exists.")

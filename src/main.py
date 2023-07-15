@@ -3,26 +3,23 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from src.routers import user
-from src.core.redis import RedisHandler
-
-redis_handler = RedisHandler()
+from src.routers import auth
 
 dotenv_path = os.path.join(os.path.dirname(__file__), "core", ".env")
 load_dotenv(dotenv_path)
 
 app = FastAPI(debug=True)
-app.include_router(user.router)
+app.include_router(auth.router)
 
 
-@app.on_event("startup")
-async def startup():
-    await redis_handler.connect()
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await redis_handler.disconnect()
+# @app.on_event("startup")
+# async def startup():
+#     await redis_handler.connect()
+#
+#
+# @app.on_event("shutdown")
+# async def shutdown():
+#     await redis_handler.disconnect()
 
 
 @app.get("/get")
@@ -31,10 +28,10 @@ async def start():
     return {"message": "hello world", "data_from_redis": data}
 
 
-@app.get("/store")
-async def store_data():
-    key = "my_key"
-    value = "my_value"
+@app.post("/store")
+async def store_data(key: str, value: str):
+    key = key
+    value = value
     exp = 3600  # Expiration time in seconds
     await redis_handler.set(key, value, exp)
     return {"message": "Data stored in Redis"}
