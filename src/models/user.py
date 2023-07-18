@@ -3,7 +3,6 @@ from typing import Optional
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, validates
 from sqlalchemy import String, Enum
-# from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db.base import SQLBase
 from src.core.db.database import AsyncSession
@@ -38,6 +37,23 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
         if not value and not self.email:
             raise ValueError("Either email or phone_number must be provided.")
         return value
+
+    @staticmethod
+    async def create_user(session: AsyncSession, email, password, phone):
+        user = sa.select(User).where(email == User.email or phone == User.phone)
+        existing_user = await session.scalar(user)
+        if existing_user is not None:
+            raise UserAlreadyExistsException(
+                message="User with this email already exists.")
+        async with session:
+            new_user = User(
+                phone=phone,
+                email=email,
+                password=PasswordHandler.hash(password),
+            )
+            session.add(new_user)
+            await session.commit()
+        return new_user
 
     @staticmethod
     async def create_user_by_email(session: AsyncSession, email, password):
@@ -83,3 +99,10 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
     @staticmethod
     async def get_user_by_phone(session: AsyncSession, phone: str):
         return await session.execute(sa.select(User).where(User.phone == phone))
+
+    @staticmethod
+    async def delete_user(session: AsyncSession, user_id: int):
+        delete_query = sa.delete(User).where(User.id == user_id)
+        async with session.begin():
+            await session.execute(delete_query)
+            await session.commit()

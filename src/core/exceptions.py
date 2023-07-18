@@ -16,16 +16,20 @@ class UserAlreadyExistsException(CustomException):
     error_code = "user_already_exists"
     message = HTTPStatus.CONFLICT.description
 
-    def __init__(self, message=None):
-        if message:
-            self.message = message
-
 
 class ForbiddenException(CustomException):
-    code = HTTPStatus.FORBIDDEN
+    status_code = HTTPStatus.FORBIDDEN
     error_code = HTTPStatus.FORBIDDEN
     message = HTTPStatus.FORBIDDEN.description
 
-    def __init__(self, message=None):
-        if message:
-            self.message = message
+
+class OTPError(CustomException):
+    status_code = HTTPStatus.BAD_REQUEST
+    error_code = HTTPStatus.BAD_REQUEST
+    message = HTTPStatus.BAD_REQUEST.description
+
+
+class UnauthorizedException(CustomException):
+    status_code = HTTPStatus.UNAUTHORIZED
+    error_code = HTTPStatus.UNAUTHORIZED
+    message = HTTPStatus.UNAUTHORIZED.description

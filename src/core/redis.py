@@ -27,18 +27,26 @@ class RedisHandler:
             await self.redis.close()
 
     async def get(self, name):
-        serialized_name = await self.serialize(name)
-        result = await self.redis.get(serialized_name)
-        if result:
-            return await self.deserialize(result)
-
+        try:
+            serialized_name = await self.serialize(name)
+            result = await self.redis.get(serialized_name)
+            if result:
+                return await self.deserialize(result)
+        except aioredis.RedisError as e:
+            raise ValueError(f"Failed to get the value from Redis:{e}")
         return None
 
     async def set(self, name, value, exp: int):
-        serialized_name = await self.serialize(name)
-        serialized_value = await self.serialize(value)
-        return await self.redis.set(serialized_name, serialized_value, exp)
+        try:
+            serialized_name = await self.serialize(name)
+            serialized_value = await self.serialize(value)
+            return await self.redis.set(serialized_name, serialized_value, exp)
+        except aioredis.RedisError as e:
+            raise ValueError(f"Failed to set the value in Redis:{e}")
 
     async def delete(self, name):
-        serialized_name = await self.serialize(name)
-        await self.redis.delete(serialized_name)
+        try:
+            serialized_name = await self.serialize(name)
+            await self.redis.delete(serialized_name)
+        except aioredis.RedisError as e:
+            raise ValueError(f"Failed to delete the value from Redis:{e}")

@@ -55,8 +55,3 @@ class JWTHandler(HTTPBearer):
         except JWTError as exception:
             raise JWTExpiredTokenException() from exception
 
-    @staticmethod
-    def generate_tokens(payload):
-        access_token = JWTHandler.encode_access_token(payload=payload)
-        refresh_token = JWTHandler.encode_refresh_token(payload=payload)
-        return {"access_token": access_token, "refresh_token": refresh_token}
