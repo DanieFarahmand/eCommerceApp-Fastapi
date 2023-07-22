@@ -6,6 +6,7 @@ from src.models.user import User
 from src.core.redis import RedisHandler
 from src.core.exceptions import OTPError, UnauthorizedException
 from src.utils.jwt import JWTHandler
+from src.utils.password import PasswordHandler
 from src.utils.otp import OTPHandler
 from src.core.db.database import AsyncSession
 from src.schemas.out.auth import Token
@@ -103,12 +104,78 @@ class AuthController:
         except UnauthorizedException as e:
             raise HTTPException(status_code=401, detail=str(e)) from e
 
-    # Additional methods based on your requirements:
-    async def login(self, email: str, password: str) -> Token:
-        ...
+    async def login_by_email(self, session: AsyncSession, email: str, password: str) -> Token:
+        user = await User.get_user_by_email(session=session, email=email)
+        if not user:
+            raise ValueError("User with this email does not exist")
+        if PasswordHandler().verify(password=password, hashed_password=user.password):
+            access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(user.id)})
+            refresh_token = self.jwt_handler.encode_refresh_token(
+                payload={"sub": "refresh_token", "verify": str(user.id)})
+            csrf_token = self.jwt_handler.encode_refresh_token(
+                payload={
+                    "sub": "csrf_token",
+                    "refresh_token": str(refresh_token),
+                    "access_token": str(access_token),
+                }
+            )
+            await self.redis_db.set(name=refresh_token, value=user.id, exp=3600)
+            await self.redis_db.disconnect()
+            return Token(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                csrf_token=csrf_token,
+            )
+        else:
+            raise ValueError("Password is not correct")
 
-    async def logout(self, refresh_token: str) -> None:
-        ...
+    async def login_by_phone(self, session: AsyncSession, phone: str):
+        user = await User.get_user_by_phone(session=session, phone=phone)
+        if not user:
+            raise ValueError("User with this phone number does not exist.")
+        otp_code = await self.otp_handler.send_otp_verify_code(phone=phone)
+        login_data = {"phone": phone, "user": user.id, "otp_code": otp_code}
+        unique_identifier = str(uuid.uuid4())
+        await self.redis_db.connect()
+        await self.redis_db.set(name=unique_identifier, value=login_data, exp=90)
+        await self.redis_db.disconnect()
+        return unique_identifier
+
+    async def verify_login_by_phone(self , unique_id: str, otp_code: str):
+        await self.redis_db.connect()
+        login_data = await self.redis_db.get(name=unique_id)
+        is_valid = await self.otp_handler.validate_otp_code(phone=login_data["phone"], otp_code=otp_code)
+        if is_valid:
+            access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(login_data["user"])})
+            refresh_token = self.jwt_handler.encode_refresh_token(
+                payload={"sub": "refresh_token", "verify": str(login_data["user"])})
+            csrf_token = self.jwt_handler.encode_refresh_token(
+                payload={
+                    "sub": "csrf_token",
+                    "refresh_token": str(refresh_token),
+                    "access_token": str(access_token),
+                }
+            )
+            await self.redis_db.set(name=refresh_token, value=login_data["user"], exp=3600)
+            await self.redis_db.disconnect()
+            return Token(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                csrf_token=csrf_token,
+            )
+        else:
+            raise OTPError(message="Invalid OTP code.")
+
+    async def logout(self, old_refresh_token: str) -> None:
+        try:
+            await self.redis_db.connect()
+            user_id = await self.redis_db.get(name=old_refresh_token)
+            if not user_id:
+                raise UnauthorizedException(message="Invalid Refresh-Token")
+            await self.redis_db.delete(name=old_refresh_token)
+            await self.redis_db.disconnect()
+        except UnauthorizedException as e:
+            raise HTTPException(status_code=401, detail=str(e))
 
     async def get_user_info(self, user_id: str) -> User:
         ...

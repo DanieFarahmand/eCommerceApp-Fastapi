@@ -94,7 +94,8 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def get_user_by_email(session: AsyncSession, email: str):
-        return await session.execute(sa.select(User).where(User.email == email))
+        user = await session.execute(sa.select(User).where(User.email == email))
+        return user
 
     @staticmethod
     async def get_user_by_phone(session: AsyncSession, phone: str):
