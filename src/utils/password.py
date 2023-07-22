@@ -7,10 +7,10 @@ class PasswordHandler:
         deprecated="auto"
     )
 
-    @staticmethod
-    def hash(password: str):
+    @classmethod
+    def hash(cls, password: str):
         return PasswordHandler.pwd_context.hash(password)
 
-    @staticmethod
-    def verify(password: str, hashed_password: str):
-        return PasswordHandler.pwd_context.verify(password, hashed_password)
+    @classmethod
+    def verify(cls, password: str, hashed_password: str):
+        return cls.pwd_context.verify(password, hashed_password)

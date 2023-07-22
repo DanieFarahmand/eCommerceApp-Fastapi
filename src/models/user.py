@@ -19,7 +19,7 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
     lastname: Mapped[Optional[str]] = mapped_column(String(38), nullable=True)
     email: Mapped[str] = mapped_column(String(60), unique=True, nullable=True, index=True)
     phone: Mapped[str] = mapped_column(String(11), unique=True, nullable=True, index=True)
-    password: Mapped[str] = mapped_column(String(8))
+    password: Mapped[str] = mapped_column(String)
     role: Mapped[UserRoleEnum] = mapped_column(
         Enum(UserRoleEnum),
         default=UserRoleEnum.customer.value,
@@ -40,7 +40,7 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def create_user(session: AsyncSession, email, password, phone):
-        user = sa.select(User).where(email == User.email or phone == User.phone)
+        user = sa.select(User).where(email == User.email, phone == User.phone)
         existing_user = await session.scalar(user)
         if existing_user is not None:
             raise UserAlreadyExistsException(
@@ -56,35 +56,6 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
         return new_user
 
     @staticmethod
-    async def create_user_by_email(session: AsyncSession, email, password):
-        user = sa.select(User).where(email == User.email)
-        existing_user = await session.scalar(user)
-        if existing_user is not None:
-            raise UserAlreadyExistsException(
-                message="User with this email already exists.")
-        async with session:
-            new_user = User(
-                email=email,
-                password=PasswordHandler.hash(password),
-            )
-            session.add(new_user)
-            await session.commit()
-        return new_user
-
-    @staticmethod
-    async def create_user_by_phone(session: AsyncSession, phone):
-        user = sa.select(User).where(phone == User.phone)
-        existing_user = await session.scalar(user)
-        if existing_user is not None:
-            raise UserAlreadyExistsException(
-                message="User with this phone number already exists.")
-        new_user = User(phone=phone)
-        async with session:
-            session.add(new_user)
-            await session.commit()
-        return new_user
-
-    @staticmethod
     async def get_user_by_id(session: AsyncSession, user_id: int):
         return await session.get(User, user_id)
 
@@ -94,12 +65,15 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def get_user_by_email(session: AsyncSession, email: str):
-        user = await session.execute(sa.select(User).where(User.email == email))
+        result = await session.execute(sa.select(User).where(User.email == email))
+        user = result.scalar()
         return user
 
     @staticmethod
     async def get_user_by_phone(session: AsyncSession, phone: str):
-        return await session.execute(sa.select(User).where(User.phone == phone))
+        result = await session.execute(sa.select(User).where(User.phone == phone))
+        user = result.scalar()
+        return user
 
     @staticmethod
     async def delete_user(session: AsyncSession, user_id: int):

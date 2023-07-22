@@ -43,9 +43,11 @@ async def verify_registration(
             secure=True,
             httponly=True,
             samesite="strict",
+            max_age=0,
         )
+
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
-        return {"message": "Verification successful"}
+        return {"message": "Verification successful", "tokens": tokens}  # tokens are passed just for test.
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -73,9 +75,11 @@ async def login_by_email(user_data: LoginByEmailIn, response: Response,
             secure=True,
             httponly=True,
             samesite="strict",
+            max_age=0,
         )
+
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
-        return {"message": "Login was successful"}
+        return {"message": "Login was successful", "tokens": tokens}  # tokens are passed just for test.
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -88,7 +92,7 @@ async def login_by_phone(user_data: LoginByPhoneIn, db_session: AsyncSession = D
 
 
 @router.post("/login-by-phone/verify/")
-async def veridy_login_by_phone(unique_id: str, code: str, response: Response):
+async def verify_login_by_phone(unique_id: str, code: str, response: Response):
     try:
         tokens = await AuthController().verify_login_by_phone(unique_id=unique_id, otp_code=code)
         response.set_cookie(
@@ -104,9 +108,11 @@ async def veridy_login_by_phone(unique_id: str, code: str, response: Response):
             secure=True,
             httponly=True,
             samesite="strict",
+            max_age=0,
         )
+
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
-        return {"message": "Login was successful"}
+        return {"message": "Login was successful", "tokens": tokens}  # tokens are passed just for test.
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -115,13 +121,15 @@ async def veridy_login_by_phone(unique_id: str, code: str, response: Response):
 
 @router.post("/logout/")
 async def logout(request: Request, response: Response, current_user: str = Depends(get_current_user)):
-    await AuthController().logout(old_refresh_token=request.cookies.get("Refresh-Token", ""))
+    old_refresh_token = request.cookies.get("Refresh_Token", "")
+    await AuthController().logout(old_refresh_token=old_refresh_token)
     response.set_cookie(
-        key="Refresh-Token",
+        key="Refresh_Token",
         value="",
         secure=True,
         httponly=True,
         samesite="strict",
+        max_age=0,
     )
     response.set_cookie(
         key="Access-Token",
@@ -129,12 +137,43 @@ async def logout(request: Request, response: Response, current_user: str = Depen
         secure=True,
         httponly=True,
         samesite="strict",
+        max_age=0,
     )
     return {"message": "Logout was successful"}
+
+
+@router.post("/refresh/")
+async def refresh_token(
+        response: Response,
+        request: Request,
+        user_id: str = Depends(get_current_user),
+        db_session: AsyncSession = Depends(get_session)):
+    try:
+        tokens = await AuthController().refresh_token(
+            old_refresh_token=request.cookies.get("Refresh-Token", ""),
+            session_id=request.cookies.get("Session_Id", "")
+        )
+        if tokens:
+            response.set_cookie(
+                key="Refresh-Token",
+                value=tokens.refresh_token,
+                secure=True,
+                httponly=True,
+                samesite="strict",
+            )
+            response.set_cookie(
+                key="Access-Token",
+                value=tokens.access_token,
+                secure=True,
+                httponly=True,
+                samesite="strict",
+            )
+
+    except HTTPException as e:
+        raise e
 
 
 @router.delete("/delete")
 async def delete_user(user_id: int, db_session: AsyncSession = Depends(get_session)):
     await User().delete_user(session=db_session, user_id=user_id)
     return {"message": "User deleted"}
-

@@ -58,14 +58,14 @@ class AuthController:
                     payload={
                         "sub": "csrf_token",
                         "refresh_token": str(refresh_token),
-                        "access_token": str(access_token),
+                        "access_token": str(access_token)
                     }
                 )
                 # Store the refresh token in Redis
                 await self.redis_db.set(name=refresh_token, value=new_user.id, exp=3600)
                 await self.redis_db.disconnect()
                 return Token(
-                    access_token=access_token,
+                    access_token=None,
                     refresh_token=refresh_token,
                     csrf_token=csrf_token,
                 )
@@ -108,21 +108,24 @@ class AuthController:
         user = await User.get_user_by_email(session=session, email=email)
         if not user:
             raise ValueError("User with this email does not exist")
-        if PasswordHandler().verify(password=password, hashed_password=user.password):
+        if PasswordHandler.verify(password=password, hashed_password=user.password):
             access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(user.id)})
+
             refresh_token = self.jwt_handler.encode_refresh_token(
                 payload={"sub": "refresh_token", "verify": str(user.id)})
             csrf_token = self.jwt_handler.encode_refresh_token(
                 payload={
                     "sub": "csrf_token",
                     "refresh_token": str(refresh_token),
-                    "access_token": str(access_token),
+                    "access_token":str(access_token)
+
                 }
             )
+            await self.redis_db.connect()
             await self.redis_db.set(name=refresh_token, value=user.id, exp=3600)
             await self.redis_db.disconnect()
             return Token(
-                access_token=access_token,
+                access_token=None,
                 refresh_token=refresh_token,
                 csrf_token=csrf_token,
             )
@@ -141,25 +144,26 @@ class AuthController:
         await self.redis_db.disconnect()
         return unique_identifier
 
-    async def verify_login_by_phone(self , unique_id: str, otp_code: str):
+    async def verify_login_by_phone(self, unique_id: str, otp_code: str):
         await self.redis_db.connect()
         login_data = await self.redis_db.get(name=unique_id)
         is_valid = await self.otp_handler.validate_otp_code(phone=login_data["phone"], otp_code=otp_code)
         if is_valid:
             access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(login_data["user"])})
+
             refresh_token = self.jwt_handler.encode_refresh_token(
                 payload={"sub": "refresh_token", "verify": str(login_data["user"])})
             csrf_token = self.jwt_handler.encode_refresh_token(
                 payload={
                     "sub": "csrf_token",
                     "refresh_token": str(refresh_token),
-                    "access_token": str(access_token),
+                    "access_token": str(access_token)
                 }
             )
             await self.redis_db.set(name=refresh_token, value=login_data["user"], exp=3600)
             await self.redis_db.disconnect()
             return Token(
-                access_token=access_token,
+                access_token=None,
                 refresh_token=refresh_token,
                 csrf_token=csrf_token,
             )

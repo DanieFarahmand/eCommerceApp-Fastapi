@@ -27,6 +27,7 @@ async def get_current_user(
     return user_id
 
 
+#
 async def get_current_user_with_refresh(
         request: Request, credentials: HTTPAuthorizationCredentials = Depends(http_bearer)):
     if credentials.scheme != "Bearer":
