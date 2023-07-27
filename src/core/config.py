@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     REDIS_URL: str
     SMS_API_KEY: str
     OTP_CODE_LENGTH: int
+    SESSION_EXPIRE_MINUTES: int
 
     class Config:
         env_file = Path(__file__).parent / ".env"

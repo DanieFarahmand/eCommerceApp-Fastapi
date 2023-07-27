@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -6,6 +8,6 @@ class RefreshToken(BaseModel):
 
 
 class Token(BaseModel):
-    refresh_token: str | None
+    refresh_token: Optional[str]
     access_token: str
     csrf_token: str
