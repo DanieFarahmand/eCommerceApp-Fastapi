@@ -9,9 +9,7 @@ from src.dependencies.auth_dependenies import get_current_user
 router = APIRouter(prefix="/product", tags=["Products"])
 
 
-@router.post("/create/",
-             # dependencies=[Depends(admin_access)]
-             )
+@router.post("/create/", dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def create_product(
         product_data: ProductCreateIn,
         # user_id: str = Depends(get_current_user),
@@ -30,8 +28,8 @@ async def get_all_products(db_session: AsyncSession = Depends(get_session)):
     return products
 
 
-@router.delete("/delete/")
-async def get_all_products(
+@router.delete("/delete/", dependencies=[Depends(get_current_user), Depends(admin_access)])
+async def delete_product(
         product_id: ProducDeleteIn,
         db_session: AsyncSession = Depends(get_session)):
     products = await Product().delete_product(session=db_session, product_id=product_id.id)

@@ -49,7 +49,7 @@ async def get_current_user_from_db(
         db_session: AsyncSession = Depends(get_session),
         user_id: str = Depends(get_current_user)):
     try:
-        user_id_int = int(user_id)  # Convert to integer
+        user_id_int = int(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid user ID")
 

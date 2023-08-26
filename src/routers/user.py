@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.core.db.database import AsyncSession, get_session
 from src.controlllers.user import AdminUser, admin_access
+from src.dependencies.auth_dependenies import get_current_user
 from src.schemas._in.user import ChangeRoleIn
 
 router = APIRouter(prefix="/user", tags=["User"])
@@ -34,7 +35,7 @@ async def change_user_role(role: ChangeRoleIn, user_id: int, db_session: AsyncSe
     return {"message": f"user became {role.role.name}."}
 
 
-@router.delete("/delete/")
+@router.delete("/delete/", dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def delete_user(user_id: int, db_session: AsyncSession = Depends(get_session)):
     await AdminUser().delete_user(user_id=user_id, db_session=db_session)
     return {"message": "User deleted."}
