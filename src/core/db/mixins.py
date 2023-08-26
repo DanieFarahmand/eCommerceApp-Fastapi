@@ -4,6 +4,11 @@ import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, func, BigInteger, String
 
+import datetime
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.sql import func
+from sqlalchemy import DateTime
+
 
 class TimestampMixin:
     created_at: Mapped[datetime.datetime] = mapped_column(

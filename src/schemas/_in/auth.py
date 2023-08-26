@@ -42,3 +42,7 @@ class LoginByPhoneIn(BaseModel):
         matches = re.finditer(regex, phone)
         if matches:
             return phone
+
+
+class OTPCodeIn(BaseModel):
+    code: str

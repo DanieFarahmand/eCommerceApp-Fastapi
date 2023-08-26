@@ -9,5 +9,5 @@ class RefreshToken(BaseModel):
 
 class Token(BaseModel):
     refresh_token: Optional[str]
-    access_token: str
+    access_token: Optional[str]
     csrf_token: str

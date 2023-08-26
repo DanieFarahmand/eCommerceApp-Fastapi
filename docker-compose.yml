@@ -1,0 +1,21 @@
+version: '3'
+services:
+  fastapi_app:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - src/core/.env
+
+  redis:
+    image: redis:latest
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: VQSuK6xVkl4dHHZkKc3u7p9E
+      POSTGRES_DB: postgres

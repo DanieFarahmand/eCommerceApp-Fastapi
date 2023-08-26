@@ -33,3 +33,9 @@ class UnauthorizedException(CustomException):
     status_code = HTTPStatus.UNAUTHORIZED
     error_code = HTTPStatus.UNAUTHORIZED
     message = HTTPStatus.UNAUTHORIZED.description
+
+
+class UserNotFoundException(CustomException):
+    status_code = HTTPStatus.NOT_FOUND
+    error_code = HTTPStatus.NOT_FOUND
+    message = HTTPStatus.UNAUTHORIZED.description

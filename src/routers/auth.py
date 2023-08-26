@@ -6,8 +6,7 @@ from src.controlllers.auth import AuthController
 from src.core.db.database import AsyncSession, get_session
 from src.core.exceptions import UserAlreadyExistsException, UnauthorizedException
 from src.core.redis import RedisHandler
-from src.models.user import User
-from src.schemas._in.auth import RegistrationIn, LoginByEmailIn, LoginByPhoneIn
+from src.schemas._in.auth import RegistrationIn, OTPCodeIn, LoginByEmailIn, LoginByPhoneIn
 from src.dependencies.auth_dependenies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -22,22 +21,22 @@ async def register(request: Request, user_data: RegistrationIn):
             email=user_data.email,
             password=user_data.password,
             phone=user_data.phone,
-            user_session_id=user_session_id
+            user_session_id=user_session_id,
         )
     except UserAlreadyExistsException as e:
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(e))
 
 
-@router.post("/verify/{unique_identifier}/")
+@router.post("/verify/")
 async def verify_registration(
-        request: Request, response: Response, otp_code: str,
+        request: Request, response: Response, otp_code: OTPCodeIn,
         db_session: AsyncSession = Depends(get_session)):
     user_session_id = request.cookies.get("Session_Id", "")
     try:
         tokens = await AuthController().verify_registration(
             db_session=db_session,
             user_session_id=user_session_id,
-            otp_code=otp_code,
+            otp_code=otp_code.code,
         )
         response.set_cookie(
             key="Refresh_Token",
@@ -52,7 +51,6 @@ async def verify_registration(
             secure=True,
             httponly=True,
             samesite="strict",
-            max_age=0,
         )
 
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
@@ -70,19 +68,18 @@ async def login_by_email(user_data: LoginByEmailIn, response: Response,
     )
     try:
         response.set_cookie(
-            key="Refresh_Token",
-            value=tokens.refresh_token,
-            secure=True,
-            httponly=True,
-            samesite="strict",
-        )
-        response.set_cookie(
             key="Access-Token",
             value=tokens.access_token,
             secure=True,
             httponly=True,
             samesite="strict",
-            max_age=0,
+        )
+        response.set_cookie(
+            key="Refresh_Token",
+            value=tokens.refresh_token,
+            secure=True,
+            httponly=True,
+            samesite="strict",
         )
 
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
@@ -123,7 +120,7 @@ async def verify_login_by_phone(request: Request, code: str, response: Response)
             secure=True,
             httponly=True,
             samesite="strict",
-            max_age=0,
+
         )
 
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
@@ -186,9 +183,4 @@ async def refresh_token(
             )
     except UnauthorizedException as e:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=str(e))
-
-
-@router.delete("/delete")
-async def delete_user(user_id: int, db_session: AsyncSession = Depends(get_session)):
-    await User().delete_user(session=db_session, user_id=user_id)
-    return {"message": "User deleted"}
+# 127.0.0.1/:1 Access to XMLHttpRequest at 'https://daniemarket.iran.liara.run/auth/register' from origin 'http://127.0.0.1:5174' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: It does not have HTTP ok status.

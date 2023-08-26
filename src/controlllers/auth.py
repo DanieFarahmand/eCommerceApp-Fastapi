@@ -1,8 +1,7 @@
-import uuid
-
 from fastapi import HTTPException
 
 from src.models.user import User
+
 from src.core.redis import RedisHandler
 from src.core.exceptions import OTPError, UnauthorizedException, UserAlreadyExistsException
 from src.utils.jwt import JWTHandler
@@ -34,7 +33,7 @@ class AuthController:
         except OTPError as e:
             raise HTTPException(status_code=400, detail="Failed to send OTP code") from e
 
-    async def verify_registration(self, db_session: AsyncSession, otp_code: str, user_session_id: str) -> Token:
+    async def verify_registration(self, db_session: AsyncSession, otp_code, user_session_id: str) -> Token:
         try:
             await self.redis_db.connect()
             registration_data = await self.redis_db.get(name=user_session_id)
@@ -64,7 +63,7 @@ class AuthController:
                 await self.redis_db.set(name=refresh_token, value=new_user.id, exp=3600)
                 await self.redis_db.disconnect()
                 return Token(
-                    access_token=None,
+                    access_token=access_token,
                     refresh_token=refresh_token,
                     csrf_token=csrf_token,
                 )
@@ -95,7 +94,7 @@ class AuthController:
                 await self.redis_db.set(name=refresh_token, value=user.id, exp=3600)
                 await self.redis_db.disconnect()
                 return Token(
-                    access_token=None,
+                    access_token=access_token,
                     refresh_token=refresh_token,
                     csrf_token=csrf_token,
                 )
@@ -135,7 +134,7 @@ class AuthController:
                 await self.redis_db.set(name=refresh_token, value=login_data["user"], exp=3600)
                 await self.redis_db.disconnect()
                 return Token(
-                    access_token=None,
+                    access_token=access_token,
                     refresh_token=refresh_token,
                     csrf_token=csrf_token,
                 )

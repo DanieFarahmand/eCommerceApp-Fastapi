@@ -1,7 +1,7 @@
 from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Enum
 
 from src.core.db.base import SQLBase
@@ -26,21 +26,9 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
         nullable=False,
     )
 
-    @validates("email")
-    def validate_email(self, key, value):
-        if not value and not self.phone:
-            raise ValueError("Either email or phone_number must be provided.")
-        return value
-
-    @validates("phone")
-    def validate_phone(self, key, value):
-        if not value and not self.email:
-            raise ValueError("Either email or phone_number must be provided.")
-        return value
-
     @staticmethod
     async def create_user(session: AsyncSession, email, password, phone):
-        user = sa.select(User).where(email == User.email, phone == User.phone)
+        user = sa.select(User).where(sa.and_(User.email == email, User.phone == phone))
         existing_user = await session.scalar(user)
         if existing_user is not None:
             raise UserAlreadyExistsException(
@@ -57,7 +45,9 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
 
     @staticmethod
     async def get_user_by_id(session: AsyncSession, user_id: int):
-        return await session.get(User, user_id)
+        result = await session.execute(sa.select(User).where(User.id == user_id))
+        user = result.scalar()
+        return user
 
     @staticmethod
     async def get_all_users(session: AsyncSession):
@@ -76,8 +66,17 @@ class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
         return user
 
     @staticmethod
+    async def change_user_role(session: AsyncSession, user_id, role: UserRoleEnum):
+        async with session:
+            updated_user = await session.execute(
+                sa.update(User).where(User.id == user_id).values(role=role).returning(User))
+            updated_user = updated_user.fetchone()
+            await session.commit()
+            return updated_user
+
+    @staticmethod
     async def delete_user(session: AsyncSession, user_id: int):
         delete_query = sa.delete(User).where(User.id == user_id)
-        async with session.begin():
+        async with session:
             await session.execute(delete_query)
             await session.commit()
