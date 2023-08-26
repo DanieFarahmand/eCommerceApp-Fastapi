@@ -183,4 +183,3 @@ async def refresh_token(
             )
     except UnauthorizedException as e:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=str(e))
-# 127.0.0.1/:1 Access to XMLHttpRequest at 'https://daniemarket.iran.liara.run/auth/register' from origin 'http://127.0.0.1:5174' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: It does not have HTTP ok status.

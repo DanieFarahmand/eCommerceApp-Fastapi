@@ -1,11 +1,12 @@
 from abc import ABC
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 
 from src.core.db.database import AsyncSession
 from src.core.exceptions import UserNotFoundException
 from src.models.enums import UserRoleEnum
 from src.models.user import User
+from src.dependencies.auth_dependenies import get_current_user_from_db
 
 
 class AbstractBaseUser(ABC):
@@ -38,13 +39,12 @@ class AdminUser(AbstractBaseUser):
         await User.delete_user(session=db_session, user_id=user_id)
 
 
-async def admin_access(request: Request):
-    user_role = request.user.role
-    if user_role != "admin":
+async def admin_access(user: User = Depends(get_current_user_from_db)):
+    print(user.role.name)
+    if user.role.name != "admin":
         raise HTTPException(403, "Forbidden")
 
 
-async def customer_access(request):
-    user_role = request.user.role
-    if user_role != "customer":
+async def customer_access(user: User):
+    if user.role.name != "customer":
         raise HTTPException(403, "Forbidden")

@@ -4,7 +4,7 @@ from src.core.db.database import AsyncSession, get_session
 from src.controlllers.user import AdminUser, admin_access
 from src.schemas._in.category import CategoryCreateIn, DeleteCategoryIn
 from src.models.category import Category
-from src.dependencies.auth_dependenies import get_current_user
+from src.dependencies.auth_dependenies import get_current_user, get_current_user_from_db
 
 router = APIRouter(prefix="/category", tags=["Category"])
 
@@ -21,10 +21,9 @@ async def create_category(
     return {"message": f"Product [{new_category.name}] is created ."}
 
 
-@router.delete("/delete/")
+@router.delete("/delete/", dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def delete_category(
         category_id: DeleteCategoryIn,
-        # user_id: str = Depends(get_current_user),
         db_session: AsyncSession = Depends(get_session)):
     await Category.delete_category(session=db_session, category_id=category_id.id)
     return {"message": "category deleted."}

@@ -24,7 +24,6 @@ def upgrade():
     op.create_table(
         'users',
         sa.Column('id', sa.BigInteger(), primary_key=True, autoincrement=True, nullable=False),
-        sa.Column('uuid', sa.String(), nullable=False),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.Column('firstname', sa.String(length=38), nullable=True),
@@ -34,11 +33,10 @@ def upgrade():
         sa.Column('password', sa.String(), nullable=True),
         sa.Column('role', sa.Enum(UserRoleEnum), nullable=False),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('uuid'),
         sa.Index('idx_users_email', 'email'),
         sa.Index('idx_users_phone', 'phone'),
         sa.Index('idx_users_id', 'id'),
-        sa.Index('idx_users_uuid', 'uuid')
+
     )
     op.create_table(
         'categories',

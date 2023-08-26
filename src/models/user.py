@@ -12,7 +12,7 @@ from src.utils.password import PasswordHandler
 from src.core.exceptions import UserAlreadyExistsException
 
 
-class User(SQLBase, UUIDMixin, IdMixin, TimestampMixin):
+class User(SQLBase, IdMixin, TimestampMixin):
     __tablename__ = "users"
 
     firstname: Mapped[Optional[str]] = mapped_column(String(38), nullable=True)

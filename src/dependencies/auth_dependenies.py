@@ -46,8 +46,14 @@ async def get_current_user_with_refresh(
 
 
 async def get_current_user_from_db(
-        db_session: AsyncSession = Depends(get_session), user_id: str = Depends(get_current_user)):
-    user = await db_session.get(User, user_id)
+        db_session: AsyncSession = Depends(get_session),
+        user_id: str = Depends(get_current_user)):
+    try:
+        user_id_int = int(user_id)  # Convert to integer
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    user = await db_session.get(User, user_id_int)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found in the database")
     return user
