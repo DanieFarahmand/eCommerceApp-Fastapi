@@ -1,4 +1,5 @@
 from http import HTTPStatus
+import logging
 
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 
@@ -11,6 +12,7 @@ from src.dependencies.auth_dependenies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 redis_handler = RedisHandler()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register/")
@@ -39,7 +41,7 @@ async def verify_registration(
             otp_code=otp_code.code,
         )
         response.set_cookie(
-            key="Refresh_Token",
+            key="Refresh-Token",
             value=tokens.refresh_token,
             secure=True,
             httponly=True,
@@ -54,7 +56,7 @@ async def verify_registration(
         )
 
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
-        return {"message": "Verification successful", "tokens": tokens}  # tokens are passed just for test.
+        return {"message": "Verification successful", "tokens": tokens}
     except UserAlreadyExistsException as e:
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(e))
 
@@ -75,7 +77,7 @@ async def login_by_email(user_data: LoginByEmailIn, response: Response,
             samesite="strict",
         )
         response.set_cookie(
-            key="Refresh_Token",
+            key="Refresh-Token",
             value=tokens.refresh_token,
             secure=True,
             httponly=True,
@@ -83,6 +85,7 @@ async def login_by_email(user_data: LoginByEmailIn, response: Response,
         )
 
         response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
+
         return {"message": "Login was successful", "tokens": tokens}  # tokens are passed just for test.
     except UserAlreadyExistsException as e:
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(e))
@@ -108,7 +111,7 @@ async def verify_login_by_phone(request: Request, code: str, response: Response)
         tokens = await AuthController().verify_login_by_phone(
             user_session_id=user_session_id, otp_code=code)
         response.set_cookie(
-            key="Refresh_Token",
+            key="Refresh-Token",
             value=tokens.refresh_token,
             secure=True,
             httponly=True,
@@ -130,12 +133,16 @@ async def verify_login_by_phone(request: Request, code: str, response: Response)
 
 
 @router.post("/logout/")
-async def logout(request: Request, response: Response, current_user: str = Depends(get_current_user)):
-    old_refresh_token = request.cookies.get("Refresh_Token", "")
+async def logout(
+        request: Request,
+        response: Response,
+        current_user: str = Depends(get_current_user)):
+    old_refresh_token = request.cookies.get("Refresh-Token", "")
+
     try:
         await AuthController().logout(old_refresh_token=old_refresh_token)
         response.set_cookie(
-            key="Refresh_Token",
+            key="Refresh-Token",
             value="",
             secure=True,
             httponly=True,
@@ -181,5 +188,6 @@ async def refresh_token(
                 httponly=True,
                 samesite="strict",
             )
+            response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
     except UnauthorizedException as e:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=str(e))

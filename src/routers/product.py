@@ -1,36 +1,40 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.core.db.database import AsyncSession, get_session
-from src.controlllers.user import AdminUser, admin_access
-from src.schemas._in.product import ProductCreateIn, ProducDeleteIn
-from src.models.product import Product
+from src.controlllers.user import admin_access
+from src.schemas._in.product import ProductCreateIn, ProductDeleteIn
+from src.controlllers.product import ProductController
 from src.dependencies.auth_dependenies import get_current_user
 
-router = APIRouter(prefix="/product", tags=["Products"])
+router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.post("/create/", dependencies=[Depends(get_current_user), Depends(admin_access)])
-async def create_product(
-        product_data: ProductCreateIn,
-        # user_id: str = Depends(get_current_user),
-        db_session: AsyncSession = Depends(get_session)):
-    new_product = await Product().create_product(
-        product_data=product_data,
-        session=db_session,
-
-    )
-    return {"message": f"Product [{new_product.title}] is created ."}
+@router.post("/")
+async def create_product(product_data: ProductCreateIn, db_session: AsyncSession = Depends(get_session)):
+    try:
+        product = await ProductController(db_session=db_session).create_product(product_data=product_data)
+        return {"message": f"Product [{product.title}] is created ."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get("/get-all-products/")
 async def get_all_products(db_session: AsyncSession = Depends(get_session)):
-    products = await Product().get_all_products(session=db_session)
+    products = await ProductController(db_session=db_session).get_all_products()
     return products
 
 
 @router.delete("/delete/", dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def delete_product(
-        product_id: ProducDeleteIn,
+        product_id: ProductDeleteIn,
         db_session: AsyncSession = Depends(get_session)):
-    products = await Product().delete_product(session=db_session, product_id=product_id.id)
+    products = await ProductController(db_session=db_session).delete_product(product_id=product_id.id)
     return {"message": "product deleted."}
+
+
+@router.get("/{product_id}/")
+async def get_product(product_id: int, db_session: AsyncSession = Depends(get_session)):
+    product = await ProductController(db_session=db_session).get_product(product_id=product_id)
+    if product is None:
+        return {"error": "Product not found"}
+    return product

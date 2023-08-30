@@ -1,9 +1,9 @@
 from fastapi import HTTPException
 
-from src.models.user import User
-
+from src.controlllers.user import UserController
 from src.core.redis import RedisHandler
 from src.core.exceptions import OTPError, UnauthorizedException, UserAlreadyExistsException
+from src.models.user import User
 from src.utils.jwt import JWTHandler
 from src.utils.password import PasswordHandler
 from src.utils.otp import OTPHandler
@@ -47,7 +47,8 @@ class AuthController:
             # Verify the OTP code provided by the user
             is_valid = await self.otp_handler.validate_otp_code(phone=phone, otp_code=otp_code)
             if is_valid:
-                new_user = await User.create_user(session=db_session, email=email, password=password, phone=phone)
+                new_user = await UserController(db_session=db_session).create_user(email=email, password=password,
+                                                                                   phone=phone)
                 access_token = self.jwt_handler.encode_access_token(payload={'user_id': str(new_user.id)})
                 refresh_token = self.jwt_handler.encode_refresh_token(
                     payload={"sub": "refresh_token", "verify": str(new_user.id)}
@@ -74,7 +75,7 @@ class AuthController:
 
     async def login_by_email(self, session: AsyncSession, email: str, password: str) -> Token:
         try:
-            user = await User.get_user_by_email(session=session, email=email)
+            user = await UserController(db_session=session, ).get_user_by_email(email=email)
             if not user:
                 raise ValueError("User with this email does not exist")
             if PasswordHandler.verify(password=password, hashed_password=user.password):
@@ -103,7 +104,7 @@ class AuthController:
 
     async def login_by_phone(self, user_session_id, session: AsyncSession, phone: str) -> None:
         try:
-            user = await User.get_user_by_phone(session=session, phone=phone)
+            user = await UserController(db_session=session).get_user_by_phone(phone=phone)
             if not user:
                 raise ValueError("User with this phone number does not exist.")
             otp_code = await self.otp_handler.send_otp_verify_code(phone=phone)

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routers import auth, user, product, category
+from src.routers import auth, user, product, category, comment
 from src.core.middlewares.session import SessionMiddleware
 from src.core.middlewares.response_logger import ResponseLoggerMiddleware
 
@@ -13,6 +13,7 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(product.router)
 app.include_router(category.router)
+app.include_router(comment.router)
 
 origins = [
     "http://localhost:3000",

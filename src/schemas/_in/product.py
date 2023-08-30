@@ -15,5 +15,9 @@ class ProductCreateIn(BaseModel):
         arbitrary_types_allowed = True
 
 
-class ProducDeleteIn(BaseModel):
+class ProductDeleteIn(BaseModel):
+    id: int
+
+
+class GetProductIn(BaseModel):
     id: int
