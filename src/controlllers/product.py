@@ -1,4 +1,6 @@
 import sqlalchemy as sa
+from fastapi import HTTPException
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.db.database import AsyncSession
 from src.models.product import Product
@@ -45,7 +47,25 @@ class ProductController:
             return serialized_products
 
     async def delete_product(self, product_id):
-        delete_product = sa.delete(Product).where(Product.id == product_id)
         async with self.db_session:
-            await self.db_session.execute(delete_product)
-            await self.db_session.commit()
+            product = await self.db_session.execute(
+                sa.select(Product).filter(Product.id == product_id)
+            )
+            product = product.scalar()
+            if product:
+                await self.db_session.delete(product)
+                await self.db_session.commit()
+
+    async def get_comments(self, product_id):
+        async with self.db_session as session:
+            query = (
+                sa.select(Product)
+                .filter(Product.id == product_id)
+                .options(selectinload(Product.comments))
+            )
+            product = await session.execute(query)
+            product = product.scalar()
+            if not product:
+                raise HTTPException(status_code=404, detail="Product not found.")
+            comments = product.comments
+            return comments

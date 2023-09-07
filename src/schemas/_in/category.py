@@ -10,3 +10,7 @@ class CategoryCreateIn(BaseModel):
 
 class DeleteCategoryIn(BaseModel):
     id: int
+
+
+class CategoryIDIn(BaseModel):
+    id: int

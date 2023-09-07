@@ -2,10 +2,8 @@ from fastapi import HTTPException
 
 from src.controlllers.user import UserController
 from src.core.redis import RedisHandler
-from src.core.exceptions import OTPError, UnauthorizedException, UserAlreadyExistsException
-from src.models.user import User
+from src.core.exceptions import OTPError, UnauthorizedException
 from src.utils.jwt import JWTHandler
-from src.utils.password import PasswordHandler
 from src.utils.otp import OTPHandler
 from src.core.db.database import AsyncSession
 from src.schemas.out.auth import Token
@@ -17,51 +15,48 @@ class AuthController:
         self.otp_handler = OTPHandler()
         self.jwt_handler = JWTHandler()
 
-    async def register_user(self, user_session_id: str, email: str, password: str, phone: str) -> None:
+    async def login(self, user_session_id: str, phone: str) -> None:
         try:
             otp_code = await self.otp_handler.send_otp_verify_code(phone=phone)
             registration_data = {
-                "email": email,
                 "phone": phone,
-                "password": password,
                 "otp_code": otp_code,
             }
-
             await self.redis_db.connect()
             await self.redis_db.set(name=user_session_id, value=registration_data, exp=90)
             await self.redis_db.disconnect()
         except OTPError as e:
             raise HTTPException(status_code=400, detail="Failed to send OTP code") from e
 
-    async def verify_registration(self, db_session: AsyncSession, otp_code, user_session_id: str) -> Token:
+    async def verify_login(self, db_session: AsyncSession, otp_code, user_session_id: str) -> Token:
         try:
             await self.redis_db.connect()
             registration_data = await self.redis_db.get(name=user_session_id)
 
             if not registration_data:
                 raise ValueError("Invalid Session_id")
-            email = registration_data["email"]
-            password = registration_data["password"]
-            phone = registration_data["phone"]
 
+            phone = registration_data["phone"]
             # Verify the OTP code provided by the user
             is_valid = await self.otp_handler.validate_otp_code(phone=phone, otp_code=otp_code)
             if is_valid:
-                new_user = await UserController(db_session=db_session).create_user(email=email, password=password,
-                                                                                   phone=phone)
-                access_token = self.jwt_handler.encode_access_token(payload={'user_id': str(new_user.id)})
+                user = await UserController(db_session=db_session).get_user_by_phone(phone=phone)
+                if not user:
+                    user = await UserController(db_session=db_session).create_user(phone=phone)
+
+                access_token = self.jwt_handler.encode_access_token(
+                    payload={'user_id': str(user.id)})
                 refresh_token = self.jwt_handler.encode_refresh_token(
-                    payload={"sub": "refresh_token", "verify": str(new_user.id)}
-                )
+                    payload={"sub": "refresh_token",
+                             "verify": str(user.id)})
                 csrf_token = self.jwt_handler.encode_refresh_token(
                     payload={
                         "sub": "csrf_token",
                         "refresh_token": str(refresh_token),
                         "access_token": str(access_token)
-                    }
-                )
+                    })
                 # Store the refresh token in Redis
-                await self.redis_db.set(name=refresh_token, value=new_user.id, exp=3600)
+                await self.redis_db.set(name=refresh_token, value=user.id, exp=3600)
                 await self.redis_db.disconnect()
                 return Token(
                     access_token=access_token,
@@ -72,75 +67,6 @@ class AuthController:
                 raise HTTPException(status_code=401, detail="Invalid OTP code")
         except OTPError as e:
             raise HTTPException(status_code=400, detail="Failed to validate OTP code") from e
-
-    async def login_by_email(self, session: AsyncSession, email: str, password: str) -> Token:
-        try:
-            user = await UserController(db_session=session, ).get_user_by_email(email=email)
-            if not user:
-                raise ValueError("User with this email does not exist")
-            if PasswordHandler.verify(password=password, hashed_password=user.password):
-                access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(user.id)})
-
-                refresh_token = self.jwt_handler.encode_refresh_token(
-                    payload={"sub": "refresh_token", "verify": str(user.id)})
-                csrf_token = self.jwt_handler.encode_refresh_token(
-                    payload={
-                        "sub": "csrf_token",
-                        "refresh_token": str(refresh_token),
-                        "access_token": str(access_token)
-
-                    }
-                )
-                await self.redis_db.connect()
-                await self.redis_db.set(name=refresh_token, value=user.id, exp=3600)
-                await self.redis_db.disconnect()
-                return Token(
-                    access_token=access_token,
-                    refresh_token=refresh_token,
-                    csrf_token=csrf_token,
-                )
-        except Exception as e:
-            raise UnauthorizedException("Invalid email or password") from e
-
-    async def login_by_phone(self, user_session_id, session: AsyncSession, phone: str) -> None:
-        try:
-            user = await UserController(db_session=session).get_user_by_phone(phone=phone)
-            if not user:
-                raise ValueError("User with this phone number does not exist.")
-            otp_code = await self.otp_handler.send_otp_verify_code(phone=phone)
-            login_data = {"phone": phone, "user": user.id, "otp_code": otp_code}
-            await self.redis_db.connect()
-            await self.redis_db.set(name=user_session_id, value=login_data, exp=90)
-            await self.redis_db.disconnect()
-        except OTPError as e:
-            raise UserAlreadyExistsException("Failed to send OTP code") from e
-
-    async def verify_login_by_phone(self, user_session_id: str, otp_code: str):
-        try:
-            await self.redis_db.connect()
-            login_data = await self.redis_db.get(name=user_session_id)
-            is_valid = await self.otp_handler.validate_otp_code(phone=login_data["phone"], otp_code=otp_code)
-            if is_valid:
-                access_token = self.jwt_handler.encode_access_token(payload={"user_id": str(login_data["user"])})
-
-                refresh_token = self.jwt_handler.encode_refresh_token(
-                    payload={"sub": "refresh_token", "verify": str(login_data["user"])})
-                csrf_token = self.jwt_handler.encode_refresh_token(
-                    payload={
-                        "sub": "csrf_token",
-                        "refresh_token": str(refresh_token),
-                        "access_token": str(access_token)
-                    }
-                )
-                await self.redis_db.set(name=refresh_token, value=login_data["user"], exp=3600)
-                await self.redis_db.disconnect()
-                return Token(
-                    access_token=access_token,
-                    refresh_token=refresh_token,
-                    csrf_token=csrf_token,
-                )
-        except OTPError as e:
-            raise UnauthorizedException("Invalid OTP code") from e
 
     async def logout(self, old_refresh_token: str) -> None:
         try:
@@ -182,6 +108,3 @@ class AuthController:
             )
         except UnauthorizedException as e:
             raise UnauthorizedException("Invalid Refresh Token") from e
-
-    async def get_user_info(self, user_id: str) -> User:
-        ...

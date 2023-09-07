@@ -27,21 +27,20 @@ class CategoryController:
     async def get_category_products(self, category_id):
         async with self.db_session.begin():
             query = sa.select(Product).options(selectinload(
-                Product.category_id)).join(Category).filter(Category.id == category_id)
+                Product.category)).join(Category).filter(Category.id == category_id)
             products = await self.db_session.execute(query)
-            result = []
-            for product in products.scalars().all():
-                result.append(
-                    {"title": product.title,
-                     "description": product.description,
-                     "price": product.price})
+            result = products.scalars().all()
             return result
 
     async def delete_category(self, category_id):
-        delete_category = sa.delete(Category).where(Category.id == category_id)
         async with self.db_session:
-            await self.db_session.execute(delete_category)
-            await self.db_session.commit()
+            category = await self.db_session.execute(
+                sa.select(Category).filter(Category.id == category_id)
+            )
+            category = category.scalar()
+            if category:
+                await self.db_session.delete(category)
+                await self.db_session.commit()
 
     async def get_all_category(self):
         async with self.db_session:

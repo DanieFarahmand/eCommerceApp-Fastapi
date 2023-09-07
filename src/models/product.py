@@ -3,7 +3,7 @@ from sqlalchemy import String, Integer, JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.db.base import SQLBase
-from src.core.db.mixins import   IdMixin, TimestampMixin
+from src.core.db.mixins import IdMixin, TimestampMixin
 
 
 class Product(SQLBase, IdMixin, TimestampMixin):
@@ -17,4 +17,3 @@ class Product(SQLBase, IdMixin, TimestampMixin):
     category = relationship("Category", back_populates="products")
     comments = relationship("Comment", back_populates="product", cascade="all, delete-orphan")
     images: Mapped[str] = mapped_column(String, nullable=True)
-

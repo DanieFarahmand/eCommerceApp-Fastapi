@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.core.db.database import AsyncSession, get_session
-from src.controlllers.user import admin_access
+from src.dependencies.user_dependencies import admin_access
 from src.schemas._in.product import ProductCreateIn, ProductDeleteIn
+from src.schemas.out.comment import CommentOut
+from src.schemas.out.product import ProductCommentsOut
 from src.controlllers.product import ProductController
 from src.dependencies.auth_dependenies import get_current_user
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def create_product(product_data: ProductCreateIn, db_session: AsyncSession = Depends(get_session)):
     try:
         product = await ProductController(db_session=db_session).create_product(product_data=product_data)
@@ -38,3 +40,12 @@ async def get_product(product_id: int, db_session: AsyncSession = Depends(get_se
     if product is None:
         return {"error": "Product not found"}
     return product
+
+
+@router.get("/{product_id}/comments", response_model=ProductCommentsOut)
+async def get_comments_of_product(product_id: int, db_session: AsyncSession = Depends(get_session)):
+    comments = await ProductController(db_session=db_session).get_comments(product_id=product_id)
+    comment_list = [CommentOut.from_orm(comment) for comment in comments]
+    return ProductCommentsOut(
+        comment_list=comment_list
+    )

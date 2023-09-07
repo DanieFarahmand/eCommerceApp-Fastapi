@@ -12,7 +12,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             self,
             request: Request,
             call_next: RequestResponseEndpoint,
-            settings=settings,
+            app_settings=settings,
     ) -> Response:
         session_id = request.cookies.get("Session_Id")
         if not session_id:
@@ -21,8 +21,10 @@ class SessionMiddleware(BaseHTTPMiddleware):
         response.set_cookie(
             "Session_Id",
             session_id,
-            max_age=settings.SESSION_EXPIRE_MINUTES,
+            max_age=app_settings.SESSION_EXPIRE_MINUTES,
             httponly=True,
-            samesite="strict",
+            secure=True,
+            samesite="none",
+            path="/"
         )
         return response

@@ -1,14 +1,23 @@
 import os
+from typing import List
+
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
 
 from src.routers import auth, user, product, category, comment
 from src.core.middlewares.session import SessionMiddleware
 from src.core.middlewares.response_logger import ResponseLoggerMiddleware
 
-app = FastAPI(debug=True)
+
+def make_middleware() -> List[Middleware]:
+    middleware = [Middleware(ResponseLoggerMiddleware), Middleware(SessionMiddleware)]
+    return middleware
+
+
+app = FastAPI(debug=True, middleware=make_middleware())
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(product.router)
@@ -17,10 +26,12 @@ app.include_router(comment.router)
 
 origins = [
     "http://localhost:3000",
-    "https://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:8000",
-    "https://localhost:8000",
+    "http://localhost:8001",
     "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "https://daniemarket.iran.liara.run",
 ]
 
 app.add_middleware(
@@ -29,10 +40,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-CSRF-TOKEN"]
 )
-
-app.add_middleware(SessionMiddleware)
-app.add_middleware(ResponseLoggerMiddleware)
 
 dotenv_path = os.path.join(os.path.dirname(__file__), "core", ".env")
 load_dotenv(dotenv_path)
