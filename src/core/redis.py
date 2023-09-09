@@ -50,3 +50,13 @@ class RedisHandler:
             await self.redis.delete(serialized_name)
         except aioredis.RedisError as e:
             raise ValueError(f"Failed to delete the value from Redis:{e}")
+
+    async def get_keys(self, pattern):
+        keys = await self.redis.keys(pattern + "*")
+        return keys
+
+
+async def get_redis():
+    redis_handler = RedisHandler()
+    await redis_handler.connect()
+    return redis_handler

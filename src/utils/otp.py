@@ -9,9 +9,9 @@ otp_code_length = settings.OTP_CODE_LENGTH
 
 
 class OTPHandler:
-    def __init__(self):
+    def __init__(self, redis_db: RedisHandler):
         self.sms_ir = SmsIr(api_key=api_key)
-        self.redis_db = RedisHandler()
+        self.redis_db = redis_db
 
     @staticmethod
     async def generate_code():
@@ -26,19 +26,16 @@ class OTPHandler:
             parameters = {"name": "code", "value": otp}
             self.sms_ir.send_verify_code(
                 number=phone, parameters=[parameters], template_id=template_id)
-            await self.redis_db.connect()
+
             # Delete previous code if exists
             await self.redis_db.delete(name=phone)
             await self.redis_db.set(name=phone, value=otp, exp=300)
             return otp
         except OTPError as e:
             raise ValueError("Failed to send OTP code") from e
-        finally:
-            await self.redis_db.disconnect()
 
     async def validate_otp_code(self, phone, otp_code):
         try:
-            await self.redis_db.connect()
             stored_otp_code = await self.redis_db.get(name=phone)
 
             if stored_otp_code and otp_code == stored_otp_code:
@@ -48,5 +45,3 @@ class OTPHandler:
                 return False  # Invalid OTP code or expired
         except OTPError as e:
             raise ValueError("Failed to validate OTP code") from e
-        finally:
-            await self.redis_db.disconnect()

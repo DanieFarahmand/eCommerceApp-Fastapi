@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from src.schemas.out.product import ProductOut
 
 
-class ProductsForCategoryOut(BaseModel):
+class ProductsOut(BaseModel):
     products_list: List[ProductOut]
 
     class Config:

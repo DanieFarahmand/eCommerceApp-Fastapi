@@ -69,3 +69,11 @@ class ProductController:
                 raise HTTPException(status_code=404, detail="Product not found.")
             comments = product.comments
             return comments
+
+    @staticmethod
+    async def sort_by_price(products):
+        sorted_products = sorted(
+            products,
+            key=lambda product: product.get("price", 0)
+        )
+        return sorted_products

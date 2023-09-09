@@ -1,15 +1,20 @@
 import os
 from typing import List
 
+import aioredis
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_cache.decorator import cache
 from starlette.middleware import Middleware
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 
 from src.routers import auth, user, product, category, comment
 from src.core.middlewares.session import SessionMiddleware
 from src.core.middlewares.response_logger import ResponseLoggerMiddleware
+from src.core.config import settings
 
 
 def make_middleware() -> List[Middleware]:
@@ -44,7 +49,20 @@ app.add_middleware(
 )
 
 dotenv_path = os.path.join(os.path.dirname(__file__), "core", ".env")
+
 load_dotenv(dotenv_path)
+
+
+@app.get("/")
+@cache(expire=60)
+async def index():
+    return dict(hello="world")
+
+
+@app.on_event("startup")
+async def startup():
+    redis = aioredis.from_url(settings.REDIS_URL)
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 
 @app.get("/get")

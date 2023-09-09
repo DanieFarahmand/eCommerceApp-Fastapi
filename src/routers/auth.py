@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from src.controlllers.auth import AuthController
 from src.core.db.database import AsyncSession, get_session
 from src.core.exceptions import UserAlreadyExistsException, UnauthorizedException
-from src.core.redis import RedisHandler
+from src.core.redis import RedisHandler, get_redis
 from src.schemas._in.auth import LoginDataIn, OTPCodeIn
 from src.dependencies.auth_dependenies import get_current_user
 
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/login/")
-async def login(request: Request, user_data: LoginDataIn):
+async def login(request: Request, user_data: LoginDataIn, redis_db: RedisHandler = Depends(get_redis)):
     try:
         user_session_id = request.cookies.get("Session_Id", "")
-        await AuthController().login(
+        await AuthController(redis_db=redis_db).login(
             phone=user_data.phone,
             user_session_id=user_session_id,
         )
@@ -31,10 +31,11 @@ async def login(request: Request, user_data: LoginDataIn):
 @router.post("/verify/")
 async def verify_login(
         request: Request, response: Response, otp_code: OTPCodeIn,
+        redis_db: RedisHandler = Depends(get_redis),
         db_session: AsyncSession = Depends(get_session)):
     user_session_id = request.cookies.get("Session_Id", "")
     try:
-        tokens = await AuthController().verify_login(
+        tokens = await AuthController(redis_db=redis_db).verify_login(
             db_session=db_session,
             user_session_id=user_session_id,
             otp_code=otp_code.code,
@@ -68,11 +69,12 @@ async def verify_login(
 async def logout(
         response: Response,
         request: Request,
+        redis_db: RedisHandler = Depends(get_redis),
         current_user: str = Depends(get_current_user)):
     old_refresh_token = request.cookies.get("Refresh-Token", "")
 
     try:
-        await AuthController().logout(old_refresh_token=old_refresh_token)
+        await AuthController(redis_db=redis_db).logout(old_refresh_token=old_refresh_token)
         response.set_cookie(
             key="Refresh-Token",
             value="",
@@ -100,9 +102,10 @@ async def refresh_token(
         response: Response,
         request: Request,
         user_id: str = Depends(get_current_user),
+        redis_db: RedisHandler = Depends(get_redis),
         db_session: AsyncSession = Depends(get_session)):
     try:
-        tokens = await AuthController().refresh_token(
+        tokens = await AuthController(redis_db=redis_db).refresh_token(
             old_refresh_token=request.cookies.get("Refresh-Token", ""),
             session_id=request.cookies.get("Session_Id", "")
         )
@@ -125,5 +128,6 @@ async def refresh_token(
                 path="/"
             )
             response.headers["X-CSRF-TOKEN"] = tokens.csrf_token
+            return {"message": "Token refreshed."}
     except UnauthorizedException as e:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=str(e))
