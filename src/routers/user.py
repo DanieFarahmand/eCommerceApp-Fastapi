@@ -6,6 +6,7 @@ from src.dependencies.user_dependencies import admin_access
 from src.dependencies.auth_dependenies import get_current_user
 from src.schemas._in.user import ChangeRoleIn, UserIdIn
 from src.schemas.out.user import UserOut, UsersOut
+from src.core.serializers import serialize_users
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -13,9 +14,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 @router.get("/all/", response_model=UsersOut, dependencies=[Depends(get_current_user), Depends(admin_access)])
 async def get_all_users(db_session: AsyncSession = Depends(get_session)):
     users = await UserController(db_session=db_session).get_all_users()
-    print(users)
-    user_out_list = [UserOut.from_orm(user) for user in users]
-    return UsersOut(users=user_out_list)
+    return serialize_users(users)
 
 
 @router.get("/get-user-by-id/", response_model=UserOut, dependencies=[Depends(get_current_user), Depends(admin_access)])

@@ -24,3 +24,30 @@ def upgrade():
 def downgrade():
     # Remove the column if needed
     op.drop_column('comments', 'is_published')
+
+
+
+# class ProductRatingEnum(Enum):
+#     very_bad = "1"
+#     bad = "2"
+#     average = "3"
+#     good = "4"
+#     very_good = "5"
+
+#
+# def upgrade():
+#     # Add the custom enum type
+#     op.execute(
+#         "CREATE TYPE productratingenum AS ENUM ('1', '2', '3', '4', '5')"
+#     )
+#
+#     # Add the column using the enum type
+#     op.add_column('products', sa.Column('rating', sa.Enum(ProductRatingEnum), nullable=True))
+#     op.add_column('products', sa.Column('sold_amount', sa.Integer(), nullable=True))
+#
+#
+# def downgrade():
+#     # Drop the column and the custom enum type
+#     op.drop_column('products', 'rating')
+#     op.execute("DROP TYPE IF EXISTS productratingenum")
+#     op.drop_column('products', 'sold_amount')

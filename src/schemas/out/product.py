@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 
 from pydantic import BaseModel
@@ -9,6 +10,8 @@ class ProductOut(BaseModel):
     title: str
     description: str
     price: int
+    sold_amount: int
+    created_at: datetime.datetime
 
     class Config:
         orm_mode = True

@@ -10,6 +10,7 @@ class ProductCreateIn(BaseModel):
     price: int
     attributes: Dict
     category_id: int
+    sold_amount: int = 0
 
     class Config:
         arbitrary_types_allowed = True
