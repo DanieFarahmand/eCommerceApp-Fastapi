@@ -1,7 +1,6 @@
 from typing import Dict
 
-from pydantic import BaseModel
-from src.models.category import Category
+from pydantic import BaseModel, conint, validator
 
 
 class ProductCreateIn(BaseModel):
@@ -16,9 +15,15 @@ class ProductCreateIn(BaseModel):
         arbitrary_types_allowed = True
 
 
-class ProductDeleteIn(BaseModel):
+class ProductIn(BaseModel):
     id: int
 
 
-class GetProductIn(BaseModel):
-    id: int
+class RateProductIn(BaseModel):
+    rate: conint(ge=1, le=5)
+
+    @validator('rate')
+    def validate_rate(cls, rate):
+        if rate < 1 or rate > 5:
+            raise ValueError("Rate must be between 1 and 5")
+        return rate

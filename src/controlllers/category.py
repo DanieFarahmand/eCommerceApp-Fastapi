@@ -24,13 +24,7 @@ class CategoryController:
         await self.db_session.commit()
         return new_category
 
-    async def get_category_products(self, category_id):
-        async with self.db_session:
-            query = sa.select(Product).options(selectinload(
-                Product.category)).join(Category).filter(Category.id == category_id)
-            products = await self.db_session.execute(query)
-            result = products.scalars().all()
-            return result
+
 
     async def delete_category(self, category_id):
         async with self.db_session:

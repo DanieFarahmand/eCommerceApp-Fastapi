@@ -6,9 +6,4 @@ class UserRoleEnum(Enum):
     customer = "customer"
 
 
-class ProductRatingEnum(Enum):
-    very_bad = "1"
-    bad = "2"
-    average = "3"
-    good = "4"
-    very_good = "5"
+

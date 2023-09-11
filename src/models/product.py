@@ -1,10 +1,9 @@
 from pydantic import json
-from sqlalchemy import String, Integer, JSON, ForeignKey, Enum
+from sqlalchemy import String, Integer, JSON, ForeignKey, Enum, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.db.base import SQLBase
 from src.core.db.mixins import IdMixin, TimestampMixin
-from src.models.enums import ProductRatingEnum
 
 
 class Product(SQLBase, IdMixin, TimestampMixin):
@@ -19,4 +18,6 @@ class Product(SQLBase, IdMixin, TimestampMixin):
     comments = relationship("Comment", back_populates="product", cascade="all, delete-orphan")
     images: Mapped[str] = mapped_column(String, nullable=True)
     sold_amount: Mapped[int] = mapped_column(Integer, nullable=True)
-    rating: Mapped[ProductRatingEnum] = mapped_column(Enum(ProductRatingEnum), nullable=True)
+    rate: Mapped[float] = mapped_column(Float, nullable=True)
+    total_rating: Mapped[float] = mapped_column(Float, default=0)
+    num_ratings: Mapped[int] = mapped_column(Integer, default=0)
