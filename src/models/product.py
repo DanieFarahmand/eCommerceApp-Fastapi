@@ -1,5 +1,5 @@
 from pydantic import json
-from sqlalchemy import String, Integer, JSON, ForeignKey, Enum, Float
+from sqlalchemy import String, Integer, JSON, ForeignKey, Boolean, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.db.base import SQLBase
@@ -21,3 +21,6 @@ class Product(SQLBase, IdMixin, TimestampMixin):
     rate: Mapped[float] = mapped_column(Float, nullable=True)
     total_rating: Mapped[float] = mapped_column(Float, default=0)
     num_ratings: Mapped[int] = mapped_column(Integer, default=0)
+    on_discount: Mapped[bool] = mapped_column(Boolean, default=False)
+    discounted_price: Mapped[int] = mapped_column(Integer, nullable=True)
+    discounts = relationship("Discount", back_populates="product")

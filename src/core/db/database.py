@@ -1,8 +1,10 @@
 from typing import AsyncIterator
 
 from fastapi import Depends
+from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from src.core.config import settings
 

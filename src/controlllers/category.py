@@ -24,8 +24,6 @@ class CategoryController:
         await self.db_session.commit()
         return new_category
 
-
-
     async def delete_category(self, category_id):
         async with self.db_session:
             category = await self.db_session.execute(
